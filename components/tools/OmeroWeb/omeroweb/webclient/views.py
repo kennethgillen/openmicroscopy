@@ -1485,32 +1485,54 @@ def load_metadata_details(request, c_type, c_id, conn=None, share_id=None,
     The data and annotations are loaded by the manager. Display of appropriate
     data is handled by the template.
     """
+    logger.debug("Enter load_metadata_details func")
+
+    logger.debug("NB: c_type: %s: id: %s" % (c_type, str(c_id)))
 
     # the index of a field within a well
     index = getIntOrDefault(request, 'index', 0)
+    logger.debug("NB: index: %s" % (str(index)))
 
     context = dict()
+    logger.debug("NB: context: %s" % (str(context)))
 
     # we only expect a single object, but forms can take multiple objects
     images = (c_type == "image" and
               list(conn.getObjects("Image", [c_id])) or
               list())
+    logger.debug("NB: images: %s" % (str(images)))
     datasets = (c_type == "dataset" and
                 list(conn.getObjects("Dataset", [c_id])) or list())
+    logger.debug("WARN: This ^ took 2 seconds to complete. " )
+    logger.debug("NB: datasets: %s" % (str(datasets)))
+    logger.debug(
+        "NB: c_type: %s: id: %s datasets length: %s" % (c_type, c_id, str(len(datasets))))
     projects = (c_type == "project" and
                 list(conn.getObjects("Project", [c_id])) or list())
+    logger.debug("NB: projects: %s" % (str(projects)))
+    logger.debug("NB: projects length: %s" % (str(len(projects))))
     screens = (c_type == "screen" and
                list(conn.getObjects("Screen", [c_id])) or
                list())
+    logger.debug("NB: screens: %s" % (str(screens)))
+    logger.debug("NB: screens length: %s" % (str(len(screens))))
     plates = (c_type == "plate" and
               list(conn.getObjects("Plate", [c_id])) or list())
+    logger.debug("NB: plates: %s" % (str(plates)))
+    logger.debug("NB: plates length: %s" % (str(len(plates))))
     acquisitions = (c_type == "acquisition" and
                     list(conn.getObjects("PlateAcquisition", [c_id])) or
                     list())
+    logger.debug("NB: acquisitions: %s" % (str(acquisitions)))
+    logger.debug("NB: acquisitions length: %s" % (str(len(acquisitions))))
     shares = ((c_type == "share" or c_type == "discussion") and
               [conn.getShare(c_id)] or list())
+    logger.debug("NB: shares: %s" % (str(shares)))
+    logger.debug("NB: shares length: %s" % (str(len(shares))))
     wells = (c_type == "well" and
              list(conn.getObjects("Well", [c_id])) or list())
+    logger.debug("NB: wells: %s" % (str(wells)))
+    logger.debug("NB: wells length: %s" % (str(len(wells))))
 
     # we simply set up the annotation form, passing the objects to be
     # annotated.
@@ -1525,10 +1547,14 @@ def load_metadata_details(request, c_type, c_id, conn=None, share_id=None,
         'shares': ((c_type == "share" or c_type == "discussion") and [c_id] or
                    [])}
 
+    logger.debug("NB: selected: %s" % (str(selected)))
+
     initial = {
         'selected': selected, 'images': images,  'datasets': datasets,
         'projects': projects, 'screens': screens, 'plates': plates,
         'acquisitions': acquisitions, 'wells': wells, 'shares': shares}
+
+    logger.debug("NB: initial: %s" % (str(initial)))
 
     form_comment = None
     figScripts = None
@@ -1538,10 +1564,13 @@ def load_metadata_details(request, c_type, c_id, conn=None, share_id=None,
         manager.getAllUsers(c_id)
         manager.getComments(c_id)
         form_comment = CommentAnnotationForm(initial=initial)
+        logger.debug("NB: if statement share/disc: %s" % (str(c_type)))
     else:
         try:
             manager = BaseContainer(
                 conn, **{str(c_type): long(c_id), 'index': index})
+            logger.debug("WARN: This ^ took 2 seconds to complete. " )
+            logger.debug("NB: got our manager: %s" % (str(manager)))
         except AttributeError, x:
             return handlerInternalError(request, x)
         if share_id is not None:
@@ -1549,20 +1578,31 @@ def load_metadata_details(request, c_type, c_id, conn=None, share_id=None,
             context['share'] = BaseShare(conn, share_id)
         else:
             template = "webclient/annotations/metadata_general.html"
+            logger.debug("NB: got our template: %s" % (str(template)))
             context['canExportAsJpg'] = manager.canExportAsJpg(request)
+            logger.debug("NB: got our canExportAsJpg: %s" % (str(context['canExportAsJpg'])))
             context['annotationCounts'] = manager.getAnnotationCounts()
+            logger.debug("NB: context['annotationCounts']: %s" % (str(context['annotationCounts'])))
             figScripts = manager.listFigureScripts()
+            logger.debug("NB: processed fig scripts - list: %s" % (str(figScripts)))
     context['manager'] = manager
+    logger.debug("NB: got our manager context: %s" % (str(context['manager'])))
 
     if c_type in ("tag", "tagset"):
         context['insight_ns'] = omero.rtypes.rstring(
             omero.constants.metadata.NSINSIGHTTAGSET).val
+        logger.debug("NB: context['insight_ns']: %s" % (str(context['insight_ns'])))
     if form_comment is not None:
         context['form_comment'] = form_comment
 
+    logger.debug("NB: form_comment: %s" % (str(form_comment)))
     context['figScripts'] = figScripts
+    logger.debug("NB: context['figScripts']: %s" % (str(context['figScripts'])))
     context['template'] = template
+    logger.debug("NB: context['template']: %s" % (str(context['template'])))
     context['webclient_path'] = reverse('webindex')
+    logger.debug("NB: context['webclient_path']: %s" % (str(context['webclient_path'])))
+    logger.debug("load_metadata_details: DONE")
     return context
 
 
